@@ -1,0 +1,3 @@
+yfinance==0.2.37
+rich==13.7.1
+pandas==2.2.1
