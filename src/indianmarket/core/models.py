@@ -108,3 +108,30 @@ class ProjectionResult:
     snapshots: list[ProjectionSnapshot]
     fire_month: int | None         # 1-indexed month when FIRE crossover happens
     effective_eur_return: float
+
+
+@dataclass(frozen=True)
+class DividendBacktestConfig:
+    years: int = 5
+    monthly_sip_eur: float = 500.0
+    eu_inflation_pct: float = 2.5
+    bull_core_pct: float = 0.40
+    bull_alpha_pct: float = 0.60
+    bear_core_pct: float = 0.80
+    bear_alpha_pct: float = 0.20
+    alpha_top_n: int = 3
+
+
+@dataclass(frozen=True)
+class SwingBacktestConfig:
+    years: int = 2
+    initial_capital: float = 1_000_000.0
+    max_positions: int = 5
+    risk_per_trade_pct: float = 0.01
+    max_capital_per_trade_pct: float = 0.20
+    time_stop_days: int = 20
+    tax_slippage_pct: float = 0.002
+    atr_multiplier: float = 2.5
+    breadth_window: int = 50
+    breadth_threshold: float = 0.40
+    min_score: int = 4
