@@ -1,0 +1,37 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+Src/venv/
+
+# yfinance / project caches
+yfinance.cache
+**/yfinance.cache
+.cache/
+
+# Persisted runtime state (paper trader virtual account)
+virtual_account_state.json
+**/virtual_account_state.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

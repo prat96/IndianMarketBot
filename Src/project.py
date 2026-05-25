@@ -6,14 +6,30 @@ from rich.prompt import IntPrompt, FloatPrompt
 from rich.align import Align
 from rich import box
 import warnings
+import sys
+import os
 
 warnings.filterwarnings('ignore')
 console = Console()
 
+class SuppressOutput:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        self._original_stderr = sys.stderr
+        sys.stdout = open(os.devnull, 'w')
+        sys.stderr = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stderr.close()
+        sys.stdout = self._original_stdout
+        sys.stderr = self._original_stderr
+
 def fetch_fx_rates():
     try:
-        usd_inr = yf.Ticker('USDINR=X').info.get('regularMarketPrice') or yf.Ticker('USDINR=X').info.get('currentPrice', 83.0)
-        eur_inr = yf.Ticker('EURINR=X').info.get('regularMarketPrice') or yf.Ticker('EURINR=X').info.get('currentPrice', 90.0)
+        with SuppressOutput():
+            usd_inr = yf.Ticker('USDINR=X').info.get('regularMarketPrice') or yf.Ticker('USDINR=X').info.get('currentPrice', 83.0)
+            eur_inr = yf.Ticker('EURINR=X').info.get('regularMarketPrice') or yf.Ticker('EURINR=X').info.get('currentPrice', 90.0)
         return usd_inr, eur_inr
     except:
         return 83.0, 90.0
@@ -23,9 +39,9 @@ def run_projection():
     
     header = Panel(
         Align.center(
-            "\n[bold gold1]🚀 THE F.I.R.E. ACCELERATOR: FUTURE WEALTH PROJECTOR 🔮[/bold gold1]\n\n"
-            "[italic white]Master your Financial Independence & Retire Early (FIRE) timeline.\n"
-            "Forecast compound interest, DRIP (Dividend Reinvestment), and exactly when your passive income eclipses your living expenses.[/italic white]\n"
+            "\n[bold gold1]🌍 CROSS-BORDER F.I.R.E. PROJECTOR (EU -> INDIA) 🚀[/bold gold1]\n\n"
+            "[italic white]Master your Financial Independence timeline as a Euro-resident investing in India.\n"
+            "This model balances high Indian market returns against INR depreciation and low European inflation.[/italic white]\n"
         ),
         box=box.DOUBLE_EDGE,
         border_style="gold1",
@@ -34,88 +50,86 @@ def run_projection():
     console.print(header)
     
     years = IntPrompt.ask("\n[bold cyan]1.[/bold cyan] How many years into the future do you want to project?", default=15)
-    monthly_sip = FloatPrompt.ask("[bold cyan]2.[/bold cyan] Enter your monthly SIP amount (₹)", default=20000.0)
-    target_expense = FloatPrompt.ask("[bold cyan]3.[/bold cyan] Target Monthly Living Expenses in [bold]today's money[/bold] (₹)", default=50000.0)
-    div_yield = FloatPrompt.ask("[bold cyan]4.[/bold cyan] Expected Annual Dividend Yield (%) [Historic: ~5-6%]", default=5.0)
-    cap_app = FloatPrompt.ask("[bold cyan]5.[/bold cyan] Expected Annual Capital Appreciation (%) [Historic: ~8-12%]", default=10.0)
-    inflation_rate = FloatPrompt.ask("[bold cyan]6.[/bold cyan] Expected Annual Inflation Rate (%) [Historic India: ~6%]", default=6.0)
+    monthly_sip_eur = FloatPrompt.ask("[bold cyan]2.[/bold cyan] Enter your monthly SIP amount in Euros (€)", default=500.0)
+    target_expense_eur = FloatPrompt.ask("[bold cyan]3.[/bold cyan] Target Monthly Living Expenses in [bold]today's Euros[/bold] (€)", default=2500.0)
+    swr = FloatPrompt.ask("[bold cyan]4.[/bold cyan] Safe Withdrawal Rate (%) [Standard: 3.0 to 4.0%]", default=3.5)
+    inr_return = FloatPrompt.ask("[bold cyan]5.[/bold cyan] Expected Indian Market Annual Return (INR %) [Hybrid Avg: 15-20%]", default=16.0)
+    inr_depreciation = FloatPrompt.ask("[bold cyan]6.[/bold cyan] Expected Annual INR Depreciation vs EUR (%) [Historic Avg: ~3%]", default=3.0)
+    eu_inflation = FloatPrompt.ask("[bold cyan]7.[/bold cyan] Expected European Annual Inflation Rate (%) [Historic Avg: ~2.5%]", default=2.5)
 
-    with console.status("[yellow]Fetching live FX rates and running Monte Carlo style projections...[/yellow]"):
+    with console.status("[yellow]Calculating cross-border arbitrage models...[/yellow]"):
         usd_inr, eur_inr = fetch_fx_rates()
 
     console.print(Align.center(f"[bold cyan]💱 Live FX Rates:[/bold cyan] 1 USD = ₹{usd_inr:,.2f} | 1 EUR = ₹{eur_inr:,.2f}\n"))
 
-    monthly_div_yield = (div_yield / 100) / 12
-    monthly_cap_app = (cap_app / 100) / 12
+    # Cross-Border Math
+    # Effective EUR Annual Return = ((1 + INR Return) / (1 + INR Depreciation)) - 1
+    effective_eur_return = ((1 + inr_return/100) / (1 + inr_depreciation/100)) - 1
+    
+    monthly_return = effective_eur_return / 12
+    monthly_swr = (swr / 100) / 12
     
     total_months = years * 12
-    portfolio_value = 0.0
-    total_invested = 0.0
-    total_dividends = 0.0
+    portfolio_value_eur = 0.0
+    total_invested_eur = 0.0
     
     snapshots = []
     fire_achieved_month = None
     
     for m in range(1, total_months + 1):
-        # Inflate the target expense accurately per month
-        current_target_expense = target_expense * ((1 + inflation_rate/100) ** (m / 12))
+        # Inflate the target expense accurately per month using EU Inflation
+        current_target_expense = target_expense_eur * ((1 + eu_inflation/100) ** (m / 12))
         
-        monthly_div = portfolio_value * monthly_div_yield
-        total_dividends += monthly_div
+        # Calculate how much monthly income the portfolio can generate at the SWR
+        safe_monthly_withdrawal = portfolio_value_eur * monthly_swr
         
         # Check FIRE status
-        if fire_achieved_month is None and monthly_div >= current_target_expense:
+        if fire_achieved_month is None and safe_monthly_withdrawal >= current_target_expense:
             fire_achieved_month = m
             
-        # Capital appreciation
-        portfolio_value += portfolio_value * monthly_cap_app
+        # Add effective EUR return
+        portfolio_value_eur += portfolio_value_eur * monthly_return
         
-        # DRIP - we reinvest all dividends during the accumulation phase
-        portfolio_value += monthly_div
-        
-        # Add SIP
-        portfolio_value += monthly_sip
-        total_invested += monthly_sip
+        # Add EUR SIP
+        portfolio_value_eur += monthly_sip_eur
+        total_invested_eur += monthly_sip_eur
         
         if m % 12 == 0:
             year = m // 12
-            real_value = portfolio_value / ((1 + inflation_rate/100) ** year)
+            real_value_eur = portfolio_value_eur / ((1 + eu_inflation/100) ** year)
             status_icon = "🔥 [bold green]FIRE ACHIEVED[/]" if (fire_achieved_month and fire_achieved_month <= m) else "⏳ [yellow]Accumulating[/]"
             
             snapshots.append({
                 "Year": year,
-                "Invested": total_invested,
-                "Dividends": total_dividends,
-                "Nominal Value": portfolio_value,
-                "Real Value": real_value,
-                "Monthly Passive": monthly_div,
+                "Invested": total_invested_eur,
+                "Nominal Value": portfolio_value_eur,
+                "Real Value": real_value_eur,
+                "Safe Withdrawal": safe_monthly_withdrawal,
                 "Inflated Expense": current_target_expense,
                 "Status": status_icon
             })
 
     table = Table(
-        title=f"📈 {years}-Year FIRE Projection (SIP: ₹{monthly_sip:,.0f}/mo)", 
-        style="green",
+        title=f"📈 {years}-Year Euro-FIRE Projection (SIP: €{monthly_sip_eur:,.0f}/mo)", 
+        style="blue",
         box=box.SIMPLE_HEAVY,
         header_style="bold bright_cyan",
         title_justify="center"
     )
     table.add_column("Year", justify="center")
     table.add_column("Total Invested", justify="right", style="magenta")
-    table.add_column("Cum. Dividends", justify="right", style="yellow")
-    table.add_column("Portfolio (INR)", justify="right", style="bold green")
-    table.add_column("Monthly Passive\nIncome (Nominal)", justify="right", style="bold bright_green")
+    table.add_column("Portfolio (EUR)", justify="right", style="bold green")
+    table.add_column(f"Safe Monthly\nWithdrawal ({swr}%)", justify="right", style="bold bright_green")
     table.add_column("Monthly Target\nExpense (Inflated)", justify="right", style="bold red")
     table.add_column("F.I.R.E. Status", justify="center")
     
     for snap in snapshots:
         table.add_row(
             str(snap["Year"]),
-            f"₹{snap['Invested']:,.0f}",
-            f"₹{snap['Dividends']:,.0f}",
-            f"₹{snap['Nominal Value']:,.0f}",
-            f"₹{snap['Monthly Passive']:,.0f}",
-            f"₹{snap['Inflated Expense']:,.0f}",
+            f"€{snap['Invested']:,.0f}",
+            f"€{snap['Nominal Value']:,.0f}",
+            f"€{snap['Safe Withdrawal']:,.0f}",
+            f"€{snap['Inflated Expense']:,.0f}",
             snap["Status"]
         )
         
@@ -130,19 +144,20 @@ def run_projection():
         if fire_achieved_month:
             fy = fire_achieved_month // 12
             fm = fire_achieved_month % 12
-            fire_text = f"[bold green]🔥 FIRE Crossover Achieved in Year {fy}, Month {fm}![/bold green]\nAt this exact point, your dividends naturally outpaced your inflated living expenses. You can safely stop reinvesting (turn off DRIP) and live purely off the cash flow while your capital continues to appreciate."
+            fire_text = f"[bold green]🔥 FIRE Crossover Achieved in Year {fy}, Month {fm}![/bold green]\nAt this exact point, your high Indian returns outpaced both currency depreciation and EU inflation. You can safely start withdrawing €{final_snap['Safe Withdrawal']:,.0f}/month to live anywhere in Europe."
         else:
-            fire_text = f"[bold red]⏳ FIRE Not Yet Achieved.[/bold red]\nBy Year {years}, your passive income covers [bold]{(final_snap['Monthly Passive'] / final_snap['Inflated Expense'])*100:.1f}%[/bold] of your living expenses. You need to increase your SIP, extend your timeline, or lower your target expenses to hit the crossover point."
+            fire_text = f"[bold red]⏳ FIRE Not Yet Achieved.[/bold red]\nBy Year {years}, your Safe Withdrawal Rate covers [bold]{(final_snap['Safe Withdrawal'] / final_snap['Inflated Expense'])*100:.1f}%[/bold] of your European living expenses."
 
         summary_panel = Panel(
             f"{fire_text}\n\n"
-            f"[bold underline]End of Journey Summary (Year {years})[/bold underline]\n"
-            f"• [bold]Total Out of Pocket:[/bold] ₹{final_snap['Invested']:,.2f}\n"
-            f"• [bold]Final Portfolio Value:[/bold] ₹{final_snap['Nominal Value']:,.2f} [cyan](${final_snap['Nominal Value']/usd_inr:,.2f})[/cyan] [blue](€{final_snap['Nominal Value']/eur_inr:,.2f})[/blue]\n"
-            f"• [bold]Final Monthly Passive Income:[/bold] ₹{final_snap['Monthly Passive']:,.2f} [green](Pure Cash Flow)[/green]\n"
-            f"• [bold]Final Target Monthly Expenses:[/bold] ₹{final_snap['Inflated Expense']:,.2f} [red](After {inflation_rate}% inflation)[/red]\n"
-            f"• [bold]Total ROI:[/bold] {roi:.2f}%\n",
-            title="[bold gold1]The FIRE Verdict[/bold gold1]",
+            f"[bold underline]Cross-Border Summary (Year {years})[/bold underline]\n"
+            f"• [bold]Total Out of Pocket:[/bold] €{final_snap['Invested']:,.2f}\n"
+            f"• [bold]Final Portfolio Value (EUR):[/bold] €{final_snap['Nominal Value']:,.2f} [cyan](₹{final_snap['Nominal Value']*eur_inr:,.2f})[/cyan]\n"
+            f"• [bold]Final Safe Monthly Withdrawal ({swr}% SWR):[/bold] €{final_snap['Safe Withdrawal']:,.2f} [green](Liquid Cash in Europe)[/green]\n"
+            f"• [bold]Final Target Monthly Expenses:[/bold] €{final_snap['Inflated Expense']:,.2f} [red](After {eu_inflation}% EU inflation)[/red]\n"
+            f"• [bold]Effective EUR Annual Return:[/bold] {effective_eur_return*100:.2f}%\n"
+            f"• [bold]Total ROI (in EUR terms):[/bold] {roi:.2f}%\n",
+            title="[bold gold1]The Geo-Arbitrage Verdict[/bold gold1]",
             border_style="gold1",
             box=box.HEAVY
         )
