@@ -42,6 +42,7 @@ class SwingSetup:
     atr: float
     risk_per_share: float
     triggers: tuple[str, ...]
+    target: float | None = None        # only set when caller asked for a hard target
 
 
 @dataclass(frozen=True)
