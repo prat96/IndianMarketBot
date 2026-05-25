@@ -16,7 +16,16 @@ __pycache__/
 venv/
 .venv/
 env/
-Src/venv/
+**/venv/
+
+# Editable install artifacts
+*.egg-info/
+src/*.egg-info/
+build/
+dist/
+
+# IMBOT runtime
+.imbot/
 
 # yfinance / project caches
 yfinance.cache

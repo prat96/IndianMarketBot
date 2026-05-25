@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "indianmarket"
+version = "0.1.0"
+description = "Strategy core, async daemon, and Textual dashboard for Indian-market SIP / swing / FIRE bots."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Pratheek Balakrishna" }]
+dependencies = [
+    # data
+    "yfinance>=0.2,<2.0",
+    "pandas>=2.0",
+    "pyxirr>=0.10",
+    "python-dateutil",
+    "pytz",
+    # storage
+    "duckdb>=1.0",
+    # daemon
+    "apscheduler>=3.10,<4.0",
+    # UI
+    "rich>=13",
+    "textual>=0.70",
+    "textual-plotext>=0.2",
+    # CLI
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+imbot = "indianmarket.cli.__main__:main"
+imbot-daemon = "indianmarket.daemon.__main__:main"
+imbot-ui = "indianmarket.ui.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"indianmarket.data" = ["*.sql"]
+"indianmarket" = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/indianmarket/tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: end-to-end integration tests (slower)",
+]

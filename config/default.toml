@@ -1,0 +1,62 @@
+# IndianMarketBot default configuration.
+# Override with ~/.imbot/config.toml or via env vars (IMBOT_* prefix).
+
+[paths]
+# Where DuckDB state lives. Override with IMBOT_HOME env var.
+state_db = "~/.imbot/state.duckdb"
+yfinance_cache = "~/.imbot/yfinance.cache"
+
+[risk]
+# Position sizing
+max_positions = 10
+risk_per_trade_pct = 0.01            # 1% of equity per trade
+max_capital_per_trade_pct = 0.20     # never allocate >20% of equity to one position
+atr_multiplier = 2.5                 # trailing stop = close - 2.5 * ATR
+time_stop_days = 20                  # exit any position held >= 20 days (winners or losers)
+
+[execution]
+tax_slippage_pct = 0.002             # 0.2% round-trip cost model
+
+[swing]
+min_score = 4                        # entry score threshold
+max_risk_pct = 0.15                  # skip setups where stop is >15% from entry
+
+[regime]
+breadth_threshold = 0.40             # >40% of universe above 50-DMA for bull breadth
+breadth_window = 50
+
+[allocation]
+# Bull / bear allocation splits (core ETFs vs alpha picks)
+bull_core_pct = 0.40
+bull_alpha_pct = 0.60
+bear_core_pct = 0.80
+bear_alpha_pct = 0.20
+
+[sip]
+# Monthly virtual deposit refilled into paper trader cash
+amount_eur = 500.0
+deposit_hour_ist = 9
+deposit_minute_ist = 30
+
+[fx]
+# Fallbacks when Yahoo FX fetch fails
+usd_inr_fallback = 83.0
+eur_inr_fallback = 90.0
+
+[yahoo]
+timeout_sec = 10.0
+max_retries = 3
+backoff_base_sec = 1.0               # 1s, 2s, 4s
+
+[nse]
+# IST market hours
+open_hour = 9
+open_minute = 15
+close_hour = 15
+close_minute = 30
+timezone = "Asia/Kolkata"
+
+[daemon]
+prices_tick_minutes = 5
+paper_tick_seconds = 60
+health_beat_seconds = 30
